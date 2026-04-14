@@ -1,0 +1,1530 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bite by Night — Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════
+   CSS CUSTOM PROPERTIES — game palette
+════════════════════════════════════════ */
+:root {
+  --c-bg:       #080204;
+  --c-bg2:      #0d0305;
+  --c-panel:    #110406;
+  --c-panel2:   #160508;
+  --c-inset:    #0a0203;
+  --c-r1:       #5a0a0e;   /* dark red border */
+  --c-r2:       #8a1418;   /* mid red border  */
+  --c-r3:       #b01c22;   /* bright red      */
+  --c-r4:       #cc2028;   /* highlight red   */
+  --c-rbtn:     #8a0010;   /* button base     */
+  --c-rbtn2:    #a8001a;
+  --c-gold:     #a06820;
+  --c-gold2:    #c8882c;
+  --c-txt:      #ddc8c0;
+  --c-txt2:     #a88070;
+  --c-txt3:     #604840;
+  --c-scrap:    #5a0008;
+  --mono: 'Share Tech Mono', monospace;
+  --osw:  'Oswald', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ════════════════════════════════════════
+   BODY — checkered floor + red ceiling
+════════════════════════════════════════ */
+body {
+  font-family: var(--osw);
+  background: var(--c-bg);
+  color: var(--c-txt);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Checkered floor — exact tile pattern from screenshot 2 */
+.bg-floor {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(207, 13, 26, 0) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(46, 6, 17, 0.6) 0%, rgba(56, 0, 28, 0.363) 50%, rgba(32, 0, 16, 0.356) 100%),
+    repeating-conic-gradient(rgba(30,6,10,1) 0% 25%, rgb(41, 8, 16) 0% 50%) 0 0 / 56px 56px;
+}
+
+/* Film grain overlay */
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* Vignette */
+.vignette {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.78) 100%);
+}
+
+/* ════════════════════════════════════════
+   TOP HUD BAR — exact game style
+   Red diamond ◆ + number, right side
+════════════════════════════════════════ */
+.top-hud {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  height: 40px;
+  background: rgba(5,0,2,0.97);
+  border-bottom: 2px solid var(--c-r1);
+  display: flex; align-items: stretch; justify-content: space-between;
+  /* Inner bottom highlight line */
+  box-shadow: 0 2px 0 rgba(120,10,18,0.3), 0 4px 20px rgba(0,0,0,0.8);
+}
+
+.hud-left { display: flex; align-items: stretch; }
+
+/* HUD nav buttons */
+.hud-btn {
+  padding: 0 14px;
+  font-family: var(--osw);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--c-txt3);
+  background: transparent;
+  border: none; border-right: 1px solid rgba(60,10,14,0.8);
+  cursor: pointer; transition: all .12s;
+  display: flex; align-items: center; gap: 5px;
+  position: relative;
+}
+.hud-btn::after {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 2px;
+  background: transparent; transition: background .12s;
+}
+.hud-btn:hover { background: rgba(100,8,16,0.25); color: var(--c-txt2); }
+.hud-btn.on { color: var(--c-txt); background: rgba(80,6,14,0.3); }
+.hud-btn.on::after { background: var(--c-r3); }
+
+.hud-right { display: flex; align-items: stretch; }
+
+/* Scrap counter — from screenshot 1 top-right: red box, diamond icon, number */
+.scrap-hud {
+  display: flex; align-items: stretch;
+  border-left: 2px solid var(--c-r1);
+  height: 100%;
+}
+.scrap-diamond-box {
+  width: 40px; height: 100%;
+  background: linear-gradient(180deg, var(--c-scrap) 0%, rgba(60,0,8,0.9) 100%);
+  border-right: 1px solid rgba(180,30,40,0.5);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+/* Diamond shape — exact match from screenshot counter icon */
+.scrap-diamond-box::before {
+  content: '';
+  width: 18px; height: 18px;
+  background: linear-gradient(135deg, #d04028, #ff6040);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  box-shadow: 0 0 8px rgba(200,50,30,0.6);
+  position: absolute;
+}
+.scrap-num-box {
+  padding: 0 14px;
+  background: linear-gradient(180deg, rgba(90,0,12,0.6) 0%, rgba(60,0,8,0.4) 100%);
+  display: flex; align-items: center; justify-content: center;
+  min-width: 76px;
+}
+.scrap-num {
+  font-family: var(--mono);
+  font-size: 18px; font-weight: 700;
+  color: var(--c-txt);
+  letter-spacing: .04em;
+  text-shadow: 0 0 10px rgba(200,50,30,0.3);
+}
+
+/* ════════════════════════════════════════
+   PAGE WRAPPER
+════════════════════════════════════════ */
+.page { position: relative; z-index: 10; padding: 50px 14px 60px; }
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+/* ════════════════════════════════════════
+   GAME PANEL — metallic bordered frame
+   Exact match: thick border, inner line, red top glow
+════════════════════════════════════════ */
+.gp {
+  background: var(--c-panel2);
+  border: 2px solid var(--c-r1);
+  position: relative;
+  /* Inner frame line — that subtle second border */
+  box-shadow:
+    inset 0 0 0 1px rgba(80,12,18,0.45),
+    inset 0 0 60px rgba(0,0,0,0.7),
+    0 6px 40px rgba(0,0,0,0.7);
+}
+/* Top red glow strip */
+.gp-strip {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--c-r2) 15%, var(--c-r4) 50%, var(--c-r2) 85%, transparent 100%);
+  box-shadow: 0 0 12px rgba(180,28,34,0.7), 0 0 30px rgba(140,20,28,0.3);
+}
+/* Corner metal screws decoration */
+.gp::before, .gp::after {
+  content: '';
+  position: absolute;
+  width: 8px; height: 8px;
+  border: 1px solid var(--c-r2);
+  background: radial-gradient(circle, rgba(100,20,28,0.8), rgba(40,6,10,0.9));
+  z-index: 5;
+}
+.gp::before { top: 5px; left: 5px; }
+.gp::after  { bottom: 5px; right: 5px; }
+
+/* ════════════════════════════════════════
+   PANEL HEADER — "Tienda" style
+════════════════════════════════════════ */
+.gp-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px;
+  background: linear-gradient(90deg, rgba(100,8,16,0.55) 0%, rgba(40,4,8,0.3) 50%, transparent 100%);
+  border-bottom: 1px solid var(--c-r1);
+  position: relative;
+}
+/* Left vertical accent */
+.gp-head::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--c-r4), var(--c-r2), transparent);
+}
+.gp-icon {
+  width: 28px; height: 28px;
+  border: 1px solid var(--c-r2);
+  background: rgba(60,6,12,0.8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(120,10,18,0.2);
+}
+.gp-title {
+  font-family: var(--osw);
+  font-size: 15px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--c-txt);
+  text-shadow: 0 0 14px rgba(160,20,28,0.3);
+}
+.gp-head-r { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--c-txt3); }
+
+/* ════════════════════════════════════════
+   GAME-STYLE TABS — exact "ANIMATRÓNICOS / SOBREVIVIENTES"
+   Solid filled buttons, pressed look
+════════════════════════════════════════ */
+.tabs-bar {
+  display: flex; gap: 4px;
+  padding: 9px 14px 0;
+}
+.tab {
+  padding: 7px 20px;
+  font-family: var(--osw);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: var(--c-txt3);
+  background: rgba(30,4,8,0.9);
+  border: 1px solid var(--c-r1);
+  /* Inner top/left shadow for depth */
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(100,10,18,0.2);
+  cursor: pointer; transition: all .1s;
+  position: relative;
+}
+.tab::after {
+  content: ''; position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, transparent 50%);
+  pointer-events: none;
+}
+.tab:hover { background: rgba(80,6,14,0.9); color: var(--c-txt2); border-color: var(--c-r2); }
+.tab.on {
+  background: linear-gradient(180deg, var(--c-rbtn2) 0%, var(--c-rbtn) 100%);
+  color: #fff;
+  border-color: var(--c-r3);
+  box-shadow:
+    inset 0 1px 0 rgba(255,100,80,0.15),
+    inset 0 -2px 0 rgba(0,0,0,0.4),
+    0 0 16px rgba(140,0,20,0.4);
+  text-shadow: 0 0 8px rgba(255,80,60,0.5);
+}
+
+.tc { display: none; }
+.tc.on { display: block; }
+
+/* ════════════════════════════════════════
+   CHARACTER ROW — "El Podrido / Siempre vuelvo"
+   Horizontal card: dark thumbnail + name + quote
+════════════════════════════════════════ */
+.char-rows { padding: 8px 14px 12px; display: flex; flex-direction: column; gap: 5px; }
+
+.char-row {
+  display: flex; align-items: stretch;
+  background: linear-gradient(90deg, rgba(18,3,6,0.98) 0%, rgba(12,2,4,0.92) 100%);
+  border: 1px solid var(--c-r1);
+  /* Left colored accent like the selected item in the game */
+  border-left: 3px solid var(--c-r1);
+  position: relative; overflow: hidden;
+  transition: border-left-color .12s, background .12s;
+  cursor: default;
+}
+.char-row:hover {
+  border-left-color: var(--c-r3);
+  background: linear-gradient(90deg, rgba(35,5,10,0.98) 0%, rgba(16,2,5,0.95) 100%);
+}
+/* Inner right-to-left red gradient (like in the game thumbnails) */
+.char-row::after {
+  content: ''; position: absolute;
+  top: 0; right: 0; bottom: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(80,6,14,0.08));
+  pointer-events: none;
+}
+
+/* Thumbnail — dark with slight red tint, like the character preview in game */
+.char-thumb {
+  width: 88px; min-width: 88px;
+  background:
+    linear-gradient(135deg, rgba(80,6,14,0.25), rgba(20,2,4,0.8)),
+    rgba(10,2,4,0.9);
+  border-right: 1px solid var(--c-r1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; position: relative; overflow: hidden;
+}
+/* Vignette on thumb */
+.char-thumb::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%);
+  z-index: 1;
+}
+/* Red corner glow */
+.char-thumb::after {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(140,10,20,0.2), transparent 50%);
+  z-index: 1;
+}
+
+.char-info { flex: 1; padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.char-name {
+  font-family: var(--osw);
+  font-size: 16px; font-weight: 600;
+  letter-spacing: .05em; color: var(--c-txt);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+.char-quote {
+  font-family: var(--mono);
+  font-size: 10px; color: var(--c-txt3);
+  font-style: italic; letter-spacing: .04em;
+}
+.char-role-tag {
+  display: inline-block; margin-top: 4px;
+  padding: 2px 9px;
+  font-family: var(--mono);
+  font-size: 8px; letter-spacing: .12em; text-transform: uppercase;
+  border: 1px solid var(--c-r1);
+  background: rgba(30,4,8,0.8);
+  color: var(--c-txt3);
+}
+.char-role-tag.kl { border-color: var(--c-r2); color: var(--c-r3); background: rgba(60,6,12,0.8); }
+
+/* Streak column */
+.char-streak-col {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 0 14px;
+  border-left: 1px solid var(--c-r1);
+  gap: 4px; min-width: 85px;
+  background: rgba(8,1,3,0.4);
+}
+.snum {
+  font-family: var(--mono);
+  font-size: 32px; font-weight: 700;
+  color: var(--c-txt); line-height: 1;
+}
+.snum.hot { color: #ffaa33; text-shadow: 0 0 12px rgba(255,160,50,.5); }
+.snum.fire { color: #ff3322; text-shadow: 0 0 16px rgba(255,40,20,.7); animation: fireP 1s ease-in-out infinite; }
+@keyframes fireP { 0%,100%{text-shadow:0 0 10px rgba(255,40,20,.5);}50%{text-shadow:0 0 24px rgba(255,40,20,.9),0 0 40px rgba(180,20,10,.4);} }
+.slbl { font-family: var(--osw); font-size: 8px; letter-spacing: .16em; text-transform: uppercase; color: var(--c-txt3); }
+
+/* Streak buttons */
+.sbtns { display: flex; gap: 4px; margin-top: 3px; }
+.sbtn {
+  font-family: var(--mono);
+  font-size: 14px;
+  width: 34px; height: 28px;
+  background: linear-gradient(180deg, rgba(70,8,14,0.85) 0%, rgba(50,5,10,0.85) 100%);
+  border: 1px solid var(--c-r2);
+  color: var(--c-txt);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,80,60,0.08), inset 0 -1px 0 rgba(0,0,0,0.4);
+  transition: all .1s;
+}
+.sbtn:hover { background: linear-gradient(180deg, rgba(120,10,20,0.9) 0%, rgba(80,6,14,0.9) 100%); border-color: var(--c-r3); }
+.sbtn:active { transform: scale(.94); box-shadow: inset 0 2px 4px rgba(0,0,0,0.6); }
+.sbtn.x { color: var(--c-r3); font-size: 11px; font-weight: 700; background: linear-gradient(180deg, rgba(50,5,10,0.85) 0%, rgba(35,4,8,0.85) 100%); }
+.sbtn.x:hover { background: linear-gradient(180deg, rgba(100,8,16,0.9) 0%, rgba(70,5,12,0.9) 100%); }
+
+@keyframes bump { 0%{transform:scale(1);}38%{transform:scale(1.32);}100%{transform:scale(1);} }
+.bump { animation: bump .2s ease; }
+
+/* ════════════════════════════════════════
+   SAVE SLOTS — "Recompensas de inicio de sesión" style
+   Vertical cards like DÍA 1 / DÍA 2 / DÍA 3
+════════════════════════════════════════ */
+.slots-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 6px; padding: 10px 14px 14px; }
+
+.slot-card {
+  background: linear-gradient(180deg, rgba(16,3,6,0.97) 0%, rgba(10,2,4,0.95) 100%);
+  border: 2px solid var(--c-r1);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 10px 8px 9px; gap: 6px;
+  cursor: pointer; position: relative;
+  min-height: 130px;
+  box-shadow:
+    inset 0 0 0 1px rgba(60,8,14,0.4),
+    inset 0 0 20px rgba(0,0,0,0.6);
+  transition: border-color .15s, box-shadow .15s;
+}
+.slot-card:hover {
+  border-color: var(--c-r2);
+  box-shadow: inset 0 0 0 1px rgba(80,12,18,0.5), inset 0 0 20px rgba(0,0,0,0.5), 0 0 10px rgba(120,10,18,0.2);
+}
+.slot-card.act {
+  border-color: var(--c-r3);
+  box-shadow: inset 0 0 0 1px rgba(160,20,28,0.4), inset 0 0 20px rgba(0,0,0,0.4), 0 0 18px rgba(160,18,26,0.35);
+}
+.slot-card.empty { opacity: .55; }
+.slot-card.empty:hover { opacity: 1; }
+
+/* "DÍA 1" label at top */
+.slot-day {
+  font-family: var(--osw);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--c-txt2);
+}
+.slot-card.act .slot-day { color: var(--c-r3); }
+
+/* The big icon box like the scrap icon in the reward card */
+.slot-icon {
+  width: 52px; height: 52px;
+  background:
+    linear-gradient(135deg, rgba(80,6,12,0.6), rgba(20,2,4,0.9)),
+    rgba(8,1,3,0.9);
+  border: 1px solid var(--c-r2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; position: relative;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.6), 0 0 8px rgba(100,8,16,0.2);
+}
+/* Scrap icon reflection */
+.slot-icon::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; right: 0; height: 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  pointer-events: none;
+}
+
+/* Big number */
+.slot-bignum {
+  font-family: var(--mono);
+  font-size: 19px; font-weight: 700;
+  color: var(--c-txt); line-height: 1;
+}
+
+/* Bar */
+.slot-bar {
+  width: 100%; height: 3px;
+  background: rgba(60,8,14,0.4);
+  position: relative; overflow: hidden;
+}
+.slot-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-r2), var(--c-r3));
+  box-shadow: 0 0 5px rgba(180,20,28,0.6);
+  transition: width .4s;
+}
+.slot-pct { font-family: var(--mono); font-size: 9px; color: var(--c-r3); }
+.slot-date { font-family: var(--mono); font-size: 8px; color: var(--c-txt3); text-align: center; line-height: 1.5; }
+.slot-empty-lbl {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  font-family: var(--osw); font-size: 11px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--c-txt3);
+}
+
+/* Active badge */
+.slot-badge {
+  position: absolute; top: 0; right: 0;
+  font-family: var(--mono); font-size: 7px; font-weight: 700;
+  letter-spacing: .08em; color: #000;
+  background: var(--c-r3); padding: 2px 5px; text-transform: uppercase;
+}
+
+.slot-acts { display: flex; gap: 4px; width: 100%; margin-top: auto; }
+
+/* ════════════════════════════════════════
+   GAME BUTTONS — the game's actual button style
+   Double border, gradient fill, inner highlight
+════════════════════════════════════════ */
+
+/* Primary "RECLAMACIÓN" / "AGREGAR" button */
+.gbtn-primary {
+  font-family: var(--osw);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: #fff;
+  /* Multi-layer background — the game buttons have that gradient panel look */
+  background: linear-gradient(180deg,
+    rgba(160,10,24,0.95) 0%,
+    rgba(120,6,18,0.98) 45%,
+    rgba(100,4,14,1) 100%
+  );
+  border: 0; outline: none;
+  position: relative; cursor: pointer;
+  padding: 10px 22px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 38px;
+  /* Outer border layering */
+  box-shadow:
+    0 0 0 1px rgba(160,20,30,0.9),          /* outer red line */
+    0 0 0 2px rgba(40,4,8,0.8),             /* dark gap */
+    0 0 0 3px rgba(100,14,20,0.6),          /* second border */
+    inset 0 1px 0 rgba(255,100,80,0.18),    /* top inner highlight */
+    inset 0 -2px 0 rgba(0,0,0,0.5),         /* bottom inner shadow */
+    0 4px 20px rgba(140,0,20,0.4);
+  transition: all .1s;
+  /* Slight texture */
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 10px rgba(255,60,40,0.3);
+}
+.gbtn-primary::before {
+  /* Gloss top highlight strip */
+  content: ''; position: absolute;
+  top: 1px; left: 4px; right: 4px; height: 35%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent);
+  pointer-events: none;
+}
+.gbtn-primary:hover {
+  background: linear-gradient(180deg, rgba(190,14,28,0.98) 0%, rgba(150,8,22,1) 50%, rgba(120,4,16,1) 100%);
+  box-shadow:
+    0 0 0 1px rgba(200,24,34,0.95),
+    0 0 0 2px rgba(40,4,8,0.8),
+    0 0 0 3px rgba(120,16,24,0.6),
+    inset 0 1px 0 rgba(255,120,100,0.22),
+    inset 0 -2px 0 rgba(0,0,0,0.5),
+    0 4px 28px rgba(180,0,24,0.6);
+}
+.gbtn-primary:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 0 0 1px rgba(160,20,30,0.9),
+    0 0 0 2px rgba(40,4,8,0.8),
+    0 0 0 3px rgba(100,14,20,0.6),
+    inset 0 2px 6px rgba(0,0,0,0.6),
+    0 2px 10px rgba(100,0,16,0.3);
+}
+
+/* Secondary button */
+.gbtn {
+  font-family: var(--osw);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--c-txt2);
+  background: linear-gradient(180deg,
+    rgba(45,6,10,0.95) 0%,
+    rgba(30,4,8,0.98) 50%,
+    rgba(22,3,6,1) 100%
+  );
+  border: 0; outline: none;
+  position: relative; cursor: pointer;
+  padding: 7px 14px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 32px;
+  box-shadow:
+    0 0 0 1px rgba(100,14,20,0.8),
+    0 0 0 2px rgba(20,2,4,0.8),
+    0 0 0 3px rgba(60,8,14,0.5),
+    inset 0 1px 0 rgba(255,80,60,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+  transition: all .1s;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+.gbtn::before {
+  content: ''; position: absolute;
+  top: 1px; left: 4px; right: 4px; height: 35%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  pointer-events: none;
+}
+.gbtn:hover {
+  color: var(--c-txt);
+  background: linear-gradient(180deg, rgba(80,8,16,0.95) 0%, rgba(55,5,12,0.98) 50%, rgba(38,4,9,1) 100%);
+  box-shadow:
+    0 0 0 1px rgba(130,18,26,0.9),
+    0 0 0 2px rgba(20,2,4,0.8),
+    0 0 0 3px rgba(80,10,18,0.5),
+    inset 0 1px 0 rgba(255,80,60,0.09),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+}
+.gbtn:active { transform: translateY(1px); box-shadow: 0 0 0 1px rgba(100,14,20,0.8), inset 0 2px 4px rgba(0,0,0,0.6); }
+
+/* Danger variant */
+.gbtn.danger { color: #ff7060; }
+.gbtn.danger:hover { color: #ffaaaa; }
+
+/* Gold variant */
+.gbtn.gold {
+  color: var(--c-gold2);
+  background: linear-gradient(180deg, rgba(70,40,6,0.95) 0%, rgba(50,28,4,0.98) 50%, rgba(36,20,3,1) 100%);
+  box-shadow: 0 0 0 1px rgba(140,90,20,0.7), 0 0 0 2px rgba(20,8,2,0.8), 0 0 0 3px rgba(90,56,10,0.4), inset 0 1px 0 rgba(255,200,80,0.08), inset 0 -1px 0 rgba(0,0,0,0.5);
+}
+.gbtn.gold:hover {
+  color: var(--c-gold);
+  background: linear-gradient(180deg, rgba(100,58,8,0.97) 0%, rgba(70,40,5,1) 50%, rgba(50,28,4,1) 100%);
+  box-shadow: 0 0 0 1px rgba(180,120,28,0.8), 0 0 0 2px rgba(20,8,2,0.8), 0 0 0 3px rgba(120,76,12,0.5), inset 0 1px 0 rgba(255,220,100,0.1), inset 0 -1px 0 rgba(0,0,0,0.5), 0 0 14px rgba(160,100,20,0.3);
+}
+
+/* Small button */
+.gbtn-sm {
+  font-size: 9px; padding: 4px 9px; min-height: 24px; letter-spacing: .1em;
+}
+
+/* Full width */
+.gbtn-fw { width: 100%; }
+
+/* ════════════════════════════════════════
+   SCRAP TRACKER — inputs
+════════════════════════════════════════ */
+.tracker-wrap {
+  display: grid; grid-template-columns: 1fr 270px;
+  gap: 8px; padding: 10px 14px 14px;
+}
+
+.flbl {
+  font-family: var(--osw);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--c-txt3); display: block; margin-bottom: 5px;
+}
+.ginput {
+  width: 100%; padding: 9px 12px;
+  background: linear-gradient(180deg, rgba(4,0,2,0.95) 0%, rgba(8,1,3,0.9) 100%);
+  border: 1px solid var(--c-r1);
+  border-left: 3px solid var(--c-r2);
+  color: var(--c-txt); font-family: var(--mono); font-size: 16px;
+  outline: none;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(40,5,8,0.4);
+  transition: border-color .12s, box-shadow .12s;
+}
+.ginput:focus {
+  border-color: var(--c-r2); border-left-color: var(--c-r3);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(80,12,18,0.4), 0 0 10px rgba(140,16,22,0.2);
+}
+.ginput::-webkit-inner-spin-button, .ginput::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.igrp { margin-bottom: 10px; }
+.add-row { display: flex; gap: 6px; }
+.add-row .ginput { flex: 1; font-size: 14px; padding: 7px 10px; }
+.brow { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+
+/* Stats */
+.stat-r {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid rgba(60,10,16,0.35);
+}
+.stat-r:last-of-type { border-bottom: none; }
+.sk { font-family: var(--osw); font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--c-txt3); }
+.sv { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--c-txt); }
+.sv.rd { color: var(--c-r3); }
+.sv.sm { font-size: 14px; color: var(--c-txt2); }
+
+.prog-rail { height: 5px; background: rgba(60,8,14,0.3); margin: 10px 0 4px; overflow: hidden; }
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-r2), var(--c-r3));
+  box-shadow: 0 0 8px rgba(180,20,28,0.6);
+  transition: width .5s;
+}
+.prog-lbl { font-family: var(--mono); font-size: 10px; color: var(--c-txt3); text-align: right; margin-bottom: 12px; }
+
+/* Unlock list */
+.unlock-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 10px; margin-bottom: 4px;
+  background: linear-gradient(90deg, rgba(8,1,3,0.9), rgba(12,2,4,0.8));
+  border: 1px solid var(--c-r1); border-left: 3px solid var(--c-r1);
+  transition: border-left-color .12s;
+}
+.unlock-item:hover { border-left-color: var(--c-r2); }
+.unlock-item.hi { border-left-color: var(--c-r3); background: linear-gradient(90deg, rgba(20,3,6,0.95), rgba(12,2,4,0.85)); }
+.un { font-family: var(--osw); font-size: 12px; font-weight: 500; color: var(--c-txt); }
+.up { font-family: var(--mono); font-size: 11px; color: var(--c-r3); }
+.uf { font-family: var(--mono); font-size: 11px; color: #5a9a5a; }
+
+/* History */
+.hist { max-height: 100px; overflow-y: auto; margin-top: 8px; }
+.hist::-webkit-scrollbar { width: 3px; }
+.hist::-webkit-scrollbar-thumb { background: var(--c-r2); }
+.hist-r { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid rgba(50,8,14,0.3); font-family: var(--mono); font-size: 11px; }
+.ha { color: var(--c-r3); min-width: 75px; }
+.ht { color: var(--c-txt3); font-size: 10px; }
+
+/* ════════════════════════════════════════
+   MISSIONS — same row style as chars
+════════════════════════════════════════ */
+.mlist { display: flex; flex-direction: column; gap: 5px; padding: 8px 14px 12px; max-height: 450px; overflow-y: auto; }
+.mlist::-webkit-scrollbar { width: 3px; }
+.mlist::-webkit-scrollbar-thumb { background: var(--c-r2); }
+
+.mrow {
+  display: flex; align-items: stretch;
+  background: linear-gradient(90deg, rgba(15,2,5,0.97) 0%, rgba(10,2,4,0.92) 100%);
+  border: 1px solid var(--c-r1); border-left: 3px solid var(--c-r1);
+  position: relative; transition: border-left-color .12s;
+}
+.mrow:hover { border-left-color: var(--c-r3); }
+.mrow.dn { opacity: .5; }
+.mrow.dn .mtitle { text-decoration: line-through; color: var(--c-txt3); }
+
+.mid {
+  width: 52px; min-width: 52px;
+  background: rgba(6,0,2,0.7); border-right: 1px solid var(--c-r1);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 11px; color: var(--c-r3); flex-shrink: 0;
+}
+.mbody { flex: 1; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+.mtitle { font-family: var(--osw); font-size: 13px; font-weight: 500; color: var(--c-txt); line-height: 1.4; letter-spacing: .02em; }
+.mmeta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dpill { font-family: var(--mono); font-size: 8px; letter-spacing: .1em; text-transform: uppercase; padding: 2px 7px; border: 1px solid; }
+.d5{color:#a78bfa;border-color:rgba(167,139,250,.3);}
+.d6{color:#fca5a5;border-color:rgba(252,165,165,.3);}
+.d7{color:#fbbf24;border-color:rgba(251,191,36,.3);}
+.d8{color:#f97316;border-color:rgba(249,115,22,.3);}
+.d9{color:#ef4444;border-color:rgba(239,68,68,.3);}
+.d10{color:#ff2222;border-color:rgba(255,34,34,.5);text-shadow:0 0 5px rgba(255,0,0,.4);}
+.rlbl { font-family: var(--mono); font-size: 9px; color: var(--c-gold); }
+.wlbl { font-family: var(--mono); font-size: 9px; color: var(--c-gold2); text-shadow: 0 0 5px rgba(200,140,44,.4); }
+
+.mcol {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 0 10px; border-left: 1px solid var(--c-r1); gap: 4px;
+}
+
+/* "COMPLETAR" button — small version of the game's action button */
+.btn-complete {
+  font-family: var(--osw);
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: #ffa090;
+  background: linear-gradient(180deg, rgba(60,6,12,0.95) 0%, rgba(40,4,9,0.98) 100%);
+  border: 0; outline: none; cursor: pointer;
+  padding: 6px 12px; min-height: 28px; white-space: nowrap;
+  box-shadow:
+    0 0 0 1px rgba(100,14,20,0.8),
+    0 0 0 2px rgba(16,2,4,0.8),
+    0 0 0 3px rgba(60,8,14,0.4),
+    inset 0 1px 0 rgba(255,60,40,0.07),
+    inset 0 -1px 0 rgba(0,0,0,0.5);
+  position: relative; transition: all .1s;
+}
+.btn-complete::before {
+  content: ''; position: absolute;
+  top: 1px; left: 3px; right: 3px; height: 35%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+  pointer-events: none;
+}
+.btn-complete:hover {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(110,10,20,0.97) 0%, rgba(75,6,14,1) 100%);
+  box-shadow: 0 0 0 1px rgba(150,18,28,0.9), 0 0 0 2px rgba(16,2,4,0.8), 0 0 0 3px rgba(90,10,18,0.5), inset 0 1px 0 rgba(255,80,60,0.1), inset 0 -1px 0 rgba(0,0,0,0.5), 0 0 10px rgba(140,10,20,0.3);
+}
+.btn-complete:active { transform: translateY(1px); }
+.btn-complete.dn { color: var(--c-txt3); background: linear-gradient(180deg, rgba(16,2,4,0.8) 0%, rgba(10,1,3,0.8) 100%); cursor: default; font-size: 9px; }
+.btn-complete.dn:hover { color: var(--c-txt3); box-shadow: 0 0 0 1px rgba(60,8,14,0.6), 0 0 0 2px rgba(10,1,3,0.7), 0 0 0 3px rgba(30,4,8,0.3); }
+
+.tipbox {
+  display: none; padding: 8px 12px;
+  background: linear-gradient(90deg, rgba(30,3,7,0.9), rgba(18,2,4,0.85));
+  border-top: 1px solid var(--c-r1);
+  border-left: 3px solid var(--c-r2);
+  font-family: var(--mono); font-size: 11px; color: #ffaaaa; line-height: 1.65;
+}
+.tipbox.on { display: block; animation: fadeIn .25s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);} }
+.tiphead { font-family: var(--osw); font-size: 9px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--c-r3); margin-bottom: 5px; }
+
+/* Mission meta bar */
+.mbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px;
+  background: linear-gradient(90deg, rgba(8,1,3,0.7), rgba(14,2,5,0.5));
+  border-bottom: 1px solid var(--c-r1);
+  font-family: var(--mono); font-size: 10px; color: var(--c-txt3);
+  flex-wrap: wrap; gap: 6px;
+}
+.mbar-cnt { color: var(--c-r3); }
+
+/* ════════════════════════════════════════
+   DANGER ZONE
+════════════════════════════════════════ */
+.danger-wrap {
+  margin: 4px 14px 14px;
+  padding: 12px 14px;
+  background: linear-gradient(90deg, rgba(50,4,8,0.25), rgba(20,2,4,0.15));
+  border: 1px solid rgba(120,14,20,0.4); border-left: 3px solid var(--c-r3);
+}
+.dhead {
+  font-family: var(--osw); font-size: 12px; font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase;
+  color: var(--c-r3); margin-bottom: 7px;
+  display: flex; align-items: center; gap: 7px;
+}
+.ddesc { font-family: var(--mono); font-size: 10px; color: var(--c-txt3); margin-bottom: 10px; letter-spacing: .04em; }
+
+/* ════════════════════════════════════════
+   SEPARATOR
+════════════════════════════════════════ */
+.sep {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c-r1) 20%, var(--c-r2) 50%, var(--c-r1) 80%, transparent);
+  margin: 4px 14px;
+}
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+#toast {
+  position: fixed; bottom: 16px; right: 14px; z-index: 9999;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(10,1,3,0.99), rgba(16,2,5,0.99));
+  border: 1px solid var(--c-r2); border-left: 3px solid var(--c-r3);
+  font-family: var(--osw); font-size: 13px; font-weight: 600;
+  letter-spacing: .06em; color: var(--c-txt);
+  max-width: 280px;
+  box-shadow: 0 0 0 1px rgba(80,10,16,0.5), 0 0 0 2px rgba(16,2,4,0.8), 0 0 0 3px rgba(50,6,12,0.4), 0 0 20px rgba(140,0,20,0.3);
+  opacity: 0; transform: translateY(8px);
+  transition: opacity .25s, transform .25s; pointer-events: none;
+}
+#toast.on { opacity: 1; transform: translateY(0); }
+
+/* ════════════════════════════════════════
+   LIGHT MODE — Warm parchment + blood red
+════════════════════════════════════════ */
+body.lm {
+  --c-bg:       #f0e6d8;
+  --c-bg2:      #f5ede0;
+  --c-panel:    #faf3ea;
+  --c-panel2:   #fdf7f0;
+  --c-inset:    #fff8f0;
+  --c-r1:       #b84030;
+  --c-r2:       #cc3020;
+  --c-r3:       #e02010;
+  --c-r4:       #f02000;
+  --c-rbtn:     #a01010;
+  --c-rbtn2:    #c01818;
+  --c-txt:      #1a0a04;
+  --c-txt2:     #4a1c10;
+  --c-txt3:     #7a4030;
+  --c-gold:     #7a5200;
+  --c-gold2:    #a07010;
+  --c-scrap:    #8a1008;
+}
+body.lm .bg-floor {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(180,40,20,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(120,30,10,0.12) 0%, transparent 50%),
+    linear-gradient(180deg, rgba(240,220,195,0.85) 0%, rgba(230,208,180,0.95) 100%),
+    repeating-conic-gradient(rgba(210,185,155,0.5) 0% 25%, rgba(225,200,170,0.4) 0% 50%) 0 0 / 56px 56px !important;
+}
+body.lm .vignette {
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(80,20,5,0.22) 100%);
+}
+body.lm .grain { display: none; }
+
+/* HUD bar */
+body.lm .top-hud {
+  background: linear-gradient(180deg, #2a0808 0%, #1a0404 100%);
+  border-bottom: 2px solid var(--c-r2);
+  box-shadow: 0 2px 0 rgba(200,40,20,0.3), 0 4px 20px rgba(0,0,0,0.3);
+}
+body.lm .hud-btn { color: rgba(255,200,180,0.6); border-right-color: rgba(180,40,20,0.4); }
+body.lm .hud-btn:hover { background: rgba(180,30,10,0.3); color: rgba(255,220,200,0.9); }
+body.lm .hud-btn.on { color: #fff; background: rgba(160,20,8,0.35); }
+body.lm .scrap-diamond-box { background: linear-gradient(180deg, #8a1008 0%, #5a0804 100%); }
+body.lm .scrap-num-box { background: linear-gradient(180deg, rgba(40,6,4,0.8) 0%, rgba(26,4,2,0.7) 100%); }
+body.lm .scrap-num { color: #ffd0b0; }
+
+/* Panels */
+body.lm .gp {
+  background: var(--c-panel2);
+  border-color: var(--c-r1);
+  box-shadow:
+    inset 0 0 0 1px rgba(180,60,40,0.15),
+    inset 0 0 40px rgba(180,80,40,0.04),
+    0 4px 24px rgba(60,10,0,0.12),
+    0 1px 0 rgba(255,255,255,0.8);
+}
+body.lm .gp::before, body.lm .gp::after {
+  border-color: var(--c-r2);
+  background: radial-gradient(circle, rgba(180,60,30,0.6), rgba(100,20,10,0.7));
+}
+body.lm .gp-head {
+  background: linear-gradient(90deg, rgba(180,40,20,0.12) 0%, rgba(180,40,20,0.04) 50%, transparent 100%);
+  border-bottom-color: rgba(180,60,40,0.25);
+}
+body.lm .gp-icon { background: rgba(180,40,20,0.12); border-color: var(--c-r2); }
+body.lm .gp-strip {
+  background: linear-gradient(90deg, transparent, var(--c-r2) 15%, var(--c-r3) 50%, var(--c-r2) 85%, transparent);
+  box-shadow: 0 0 10px rgba(200,40,20,0.5), 0 0 24px rgba(160,20,10,0.25);
+}
+
+/* Tabs */
+body.lm .tab {
+  background: rgba(200,160,130,0.25);
+  border-color: rgba(180,60,40,0.3);
+  color: var(--c-txt3);
+}
+body.lm .tab:hover { background: rgba(180,40,20,0.12); color: var(--c-txt2); border-color: var(--c-r2); }
+body.lm .tab.on {
+  background: linear-gradient(180deg, var(--c-rbtn2) 0%, var(--c-rbtn) 100%);
+  color: #fff;
+  border-color: var(--c-r3);
+}
+
+/* Character / mission rows */
+body.lm .char-row {
+  background: linear-gradient(90deg, rgba(250,240,228,0.98) 0%, rgba(245,233,218,0.95) 100%) !important;
+  border-color: rgba(180,60,40,0.25);
+  border-left-color: rgba(180,60,40,0.4);
+}
+body.lm .char-row:hover {
+  background: linear-gradient(90deg, rgba(255,245,232,1) 0%, rgba(250,238,222,0.98) 100%) !important;
+  border-left-color: var(--c-r3) !important;
+}
+body.lm .char-thumb {
+  background: linear-gradient(135deg, rgba(180,40,20,0.15), rgba(100,20,5,0.08)), rgba(240,220,200,0.6);
+  border-right-color: rgba(180,60,40,0.2);
+}
+body.lm .char-name { color: var(--c-txt); text-shadow: none; }
+body.lm .char-quote { color: var(--c-txt3); }
+body.lm .char-role-tag { background: rgba(180,40,20,0.08); border-color: rgba(180,60,40,0.3); color: var(--c-txt3); }
+body.lm .char-role-tag.kl { background: rgba(180,20,10,0.12); border-color: var(--c-r2); color: var(--c-r3); }
+body.lm .char-streak-col { background: rgba(180,40,20,0.06); border-left-color: rgba(180,60,40,0.2); }
+body.lm .snum { color: var(--c-txt); }
+
+/* Mission rows */
+body.lm .mrow {
+  background: linear-gradient(90deg, rgba(250,240,228,0.97) 0%, rgba(245,233,218,0.93) 100%) !important;
+  border-color: rgba(180,60,40,0.22);
+  border-left-color: rgba(180,60,40,0.35);
+}
+body.lm .mrow:hover { border-left-color: var(--c-r3) !important; }
+body.lm .mrow.dn { opacity: .55; }
+body.lm .mid { background: rgba(180,40,20,0.07); border-right-color: rgba(180,60,40,0.2); color: var(--c-r3); }
+body.lm .mtitle { color: var(--c-txt); }
+body.lm .tipbox { background: linear-gradient(90deg, rgba(245,235,220,0.95), rgba(240,228,210,0.9)); border-top-color: rgba(180,60,40,0.2); border-left-color: var(--c-r2); }
+
+/* Inputs */
+body.lm .ginput {
+  background: rgba(255,248,238,0.95);
+  border-color: rgba(180,60,40,0.3);
+  border-left-color: var(--c-r2);
+  color: var(--c-txt);
+  box-shadow: inset 0 2px 4px rgba(100,30,10,0.07);
+}
+body.lm .ginput:focus { border-color: var(--c-r2); border-left-color: var(--c-r3); box-shadow: inset 0 2px 4px rgba(100,30,10,0.07), 0 0 8px rgba(200,40,20,0.15); }
+
+/* Buttons */
+body.lm .gbtn {
+  background: linear-gradient(180deg, rgba(235,215,195,0.95) 0%, rgba(220,198,175,0.98) 100%);
+  color: var(--c-txt2);
+  box-shadow: 0 0 0 1px rgba(160,60,40,0.4), 0 0 0 2px rgba(220,190,160,0.6), 0 0 0 3px rgba(140,50,30,0.2), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.08);
+}
+body.lm .gbtn:hover { background: linear-gradient(180deg, rgba(245,225,205,1) 0%, rgba(230,208,185,1) 100%); color: var(--c-txt); }
+body.lm .gbtn.danger { color: #c02010; }
+body.lm .gbtn.gold { background: linear-gradient(180deg, rgba(220,185,100,0.9) 0%, rgba(200,160,70,0.95) 100%); color: #5a3800; box-shadow: 0 0 0 1px rgba(160,110,20,0.6), 0 0 0 2px rgba(200,160,80,0.4), inset 0 1px 0 rgba(255,240,160,0.3); }
+
+/* Slot cards */
+body.lm .slot-card {
+  background: linear-gradient(135deg, rgba(250,240,228,0.98), rgba(240,228,210,0.95)) !important;
+  border-color: rgba(180,60,40,0.25) !important;
+}
+body.lm .slot-card.act { border-color: var(--c-r3) !important; box-shadow: 0 0 0 1px var(--c-r3), 0 0 16px rgba(200,40,20,0.2); }
+body.lm .slot-card.empty { background: rgba(235,220,200,0.5) !important; }
+
+/* Stat rows */
+body.lm .stat-r { border-bottom-color: rgba(160,60,40,0.15); }
+body.lm .sk { color: var(--c-txt3); }
+body.lm .sv { color: var(--c-txt); }
+body.lm .sv.rd { color: var(--c-r3); }
+
+/* Progress bar */
+body.lm .prog-rail { background: rgba(160,60,40,0.15); }
+
+/* Toast */
+body.lm #toast { background: linear-gradient(135deg, rgba(30,6,2,0.99), rgba(20,4,2,0.99)); }
+
+/* Unlock items */
+body.lm .unlock-item { background: linear-gradient(90deg, rgba(245,235,220,0.9), rgba(238,225,208,0.85)); border-color: rgba(180,60,40,0.22); }
+body.lm .unlock-item.hi { background: linear-gradient(90deg, rgba(255,240,225,0.95), rgba(248,232,212,0.9)); border-left-color: var(--c-r3); }
+body.lm .un { color: var(--c-txt); }
+
+/* Danger zone */
+body.lm .danger-wrap { background: linear-gradient(90deg, rgba(180,20,10,0.08), rgba(160,10,5,0.04)); border-color: rgba(180,40,20,0.35); border-left-color: var(--c-r3); }
+body.lm .dhead { color: var(--c-r3); }
+body.lm .ddesc { color: var(--c-txt3); }
+
+/* Separator */
+body.lm .sep { background: linear-gradient(90deg, transparent, rgba(180,60,40,0.3) 20%, rgba(200,60,40,0.5) 50%, rgba(180,60,40,0.3) 80%, transparent); }
+
+/* Lang dropdown */
+body.lm .lang-drop { background: rgba(30,6,2,0.98); border-color: var(--c-r2); }
+
+/* Buttons complete */
+body.lm .btn-complete { background: linear-gradient(180deg, rgba(230,210,190,0.95) 0%, rgba(215,193,170,0.98) 100%); color: var(--c-r3); box-shadow: 0 0 0 1px rgba(160,60,40,0.4), 0 0 0 2px rgba(215,190,160,0.6), 0 0 0 3px rgba(130,50,30,0.2), inset 0 1px 0 rgba(255,255,255,0.4); }
+body.lm .btn-complete:hover { background: linear-gradient(180deg, rgba(180,30,10,0.9) 0%, rgba(140,15,5,1) 100%); color: #fff; }
+
+/* Secret time offset */
+.secbtn {
+  position: fixed; bottom: 16px;
+  font-family: var(--mono); font-size: 10px; padding: 3px 7px;
+  background: rgba(0,0,0,.15); color: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.02); cursor: pointer; z-index: 200;
+  opacity: .15; transition: all .2s;
+}
+.secbtn:hover { color: var(--c-r3); background: rgba(60,0,10,0.5); opacity: 1; border-color: var(--c-r2); }
+.secbtn.l { left: 14px; }
+.secbtn.r { right: 14px; }
+.offpill {
+  position: fixed; bottom: 46px; left: 50%; transform: translateX(-50%);
+  font-family: var(--mono); font-size: 9px; color: var(--c-r3);
+  background: rgba(20,2,4,0.9); border: 1px solid var(--c-r2);
+  padding: 2px 10px; display: none; z-index: 200; letter-spacing: .12em;
+}
+
+/* ════════════════════════════════════════
+   LANGUAGE DROPDOWN
+════════════════════════════════════════ */
+.lang-wrap { position: relative; display: flex; align-items: stretch; }
+.lang-drop {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px); left: 0;
+  min-width: 152px;
+  background: rgba(8,1,3,0.99);
+  border: 1px solid var(--c-r2);
+  border-top: 2px solid var(--c-r3);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.8), 0 0 0 1px rgba(60,8,14,0.5);
+  z-index: 600;
+  flex-direction: column;
+}
+.lang-drop.open { display: flex; animation: fadeIn .15s ease; }
+.lang-opt {
+  padding: 9px 14px;
+  font-family: var(--osw);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--c-txt2);
+  background: transparent;
+  border: none; border-bottom: 1px solid rgba(60,10,14,0.5);
+  cursor: pointer; text-align: left;
+  transition: all .1s;
+  display: flex; align-items: center; gap: 8px;
+}
+.lang-opt:last-child { border-bottom: none; }
+.lang-opt:hover { background: rgba(100,8,16,0.4); color: var(--c-txt); }
+.lang-opt.active { color: var(--c-r3); background: rgba(80,6,14,0.3); }
+.lang-opt.active::after { content: '✔'; margin-left: auto; font-size: 9px; }
+
+@media(max-width:800px) { .tracker-wrap{grid-template-columns:1fr;} .slots-grid{grid-template-columns:repeat(3,1fr);} }
+@media(max-width:560px) { .slots-grid{grid-template-columns:repeat(2,1fr);} .char-thumb{width:68px;min-width:68px;font-size:26px;} }
+</style>
+</head>
+<body>
+
+<div class="bg-floor"></div>
+<div class="grain"></div>
+<div class="vignette"></div>
+<div id="toast"></div>
+<button class="secbtn l" id="bprev">◀</button>
+<button class="secbtn r" id="bnext">▶</button>
+<div class="offpill" id="offpill"></div>
+
+<div class="top-hud">
+  <div class="hud-left">
+    <div class="lang-wrap" id="langWrap">
+      <button class="hud-btn" id="blang">🌐 EN</button>
+      <div class="lang-drop" id="langDrop">
+        <button class="lang-opt" data-l="en">🇬🇧 English</button>
+        <button class="lang-opt" data-l="es">🇪🇸 Español</button>
+        <button class="lang-opt" data-l="pt">🇧🇷 Português</button>
+      </div>
+    </div>
+    <button class="hud-btn on" id="bdark" data-k="btnDark">🌑 OSCURO</button>
+    <button class="hud-btn" id="blight" data-k="btnLight">☀ CLARO</button>
+  </div>
+  <div class="hud-right">
+    <div class="scrap-hud">
+      <div class="scrap-diamond-box"></div>
+      <div class="scrap-num-box"><div class="scrap-num" id="hscrap">0</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page"><div class="wrap">
+
+<div class="gp">
+  <div class="gp-strip"></div>
+  <div class="gp-head">
+    <div class="gp-icon">💾</div>
+    <div class="gp-title" data-k="titleSlots">Partidas Guardadas</div>
+    <div class="gp-head-r" id="slot-lbl" data-k="noSlot">Sin slot activo</div>
+  </div>
+  <div class="slots-grid" id="slots-grid"></div>
+</div>
+
+<div class="gp">
+  <div class="gp-strip"></div>
+  <div class="gp-head">
+    <div class="gp-icon">◆</div>
+    <div class="gp-title" data-k="titleTracker">Scrap Tracker</div>
+  </div>
+  <div class="tracker-wrap">
+    <div>
+      <div class="igrp"><label class="flbl" data-k="lblGoal">Meta de Scrap</label><input class="ginput" id="goal" type="number" value="13750"/></div>
+      <div class="igrp"><label class="flbl" data-k="lblSaved">Scrap Acumulado</label><input class="ginput" id="saved" type="number" value="0"/></div>
+      <div class="igrp">
+        <label class="flbl" data-k="lblAdd">Agregar Scrap</label>
+        <div class="add-row">
+          <input class="ginput" id="mamt" type="number" min="0" placeholder="120"/>
+          <button class="gbtn-primary" id="badd" data-k="btnAdd">+ AGREGAR</button>
+        </div>
+      </div>
+      <div class="brow">
+        <button class="gbtn" id="bundo" data-k="btnUndo">⎌ DESHACER</button>
+        <button class="gbtn" id="breset" data-k="btnReset">⚠ REINICIAR</button>
+        <button class="gbtn gold" id="bsave" data-k="btnSave">▣ GUARDAR</button>
+      </div>
+      <div style="margin-top:12px">
+        <label class="flbl" data-k="lblHist">Historial</label>
+        <div class="hist" id="hist"></div>
+      </div>
+    </div>
+    <div>
+      <div style="padding:2px 0 10px">
+        <div class="stat-r"><span class="sk" data-k="sGoal">Meta</span><span class="sv sm" id="dgoal">13,750</span></div>
+        <div class="stat-r"><span class="sk" data-k="sSaved">Acumulado</span><span class="sv" id="dsaved">0</span></div>
+        <div class="stat-r"><span class="sk" data-k="sRem">Te faltan</span><span class="sv rd" id="drem">13,750</span></div>
+        <div class="prog-rail"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
+        <div class="prog-lbl" id="ppct">0.00%</div>
+      </div>
+      <label class="flbl" data-k="lblUnlocks">Desbloqueables</label>
+      <div style="margin-top:6px">
+        <div class="unlock-item"><span class="un">Customer</span><span class="uf" data-k="lblFree">FREE</span></div>
+        <div class="unlock-item"><span class="un">Medic</span><span class="up">800 ◆</span></div>
+        <div class="unlock-item"><span class="un">Security Guard</span><span class="up">1,100 ◆</span></div>
+        <div class="unlock-item"><span class="un">Fighter</span><span class="up">1,350 ◆</span></div>
+        <div class="unlock-item"><span class="un">Springtrap</span><span class="uf" data-k="lblFree">FREE</span></div>
+        <div class="unlock-item"><span class="un">The Mimic</span><span class="up">4,500 ◆</span></div>
+        <div class="unlock-item"><span class="un">Ennard</span><span class="up">6,000 ◆</span></div>
+        <div class="unlock-item hi"><span class="un" style="color:var(--c-r3)" data-k="lblFullRoster">Full Roster</span><span class="up" style="color:var(--c-gold2)">13,750+ ◆</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="gp">
+  <div class="gp-strip"></div>
+  <div class="gp-head">
+    <div class="gp-icon">🔥</div>
+    <div class="gp-title" data-k="titleStreaks">Rachas por Personaje</div>
+  </div>
+  <div class="tabs-bar">
+    <button class="tab on" data-st="surv" data-k="tabSurv">Sobrevivientes</button>
+    <button class="tab" data-st="kill" data-k="tabKill">Animatrónicos</button>
+  </div>
+  <div class="tc on" id="st-surv"><div class="char-rows" id="surv-list"></div></div>
+  <div class="tc" id="st-kill"><div class="char-rows" id="kill-list"></div></div>
+</div>
+
+<div class="gp">
+  <div class="gp-strip"></div>
+  <div class="gp-head">
+    <div class="gp-icon">☠</div>
+    <div class="gp-title" data-k="titleMissions">Misiones</div>
+  </div>
+  <div class="tabs-bar">
+    <button class="tab on" data-mt="daily" data-k="tabDaily">⚡ Diarias</button>
+    <button class="tab" data-mt="weekly" data-k="tabWeekly">💀 Semanal</button>
+    <button class="tab" data-mt="chill" data-k="tabChill">🎯 Desafíos</button>
+  </div>
+
+  <div class="tc on" id="mt-daily">
+    <div class="mbar"><span data-k="infoDly">5 misiones por día, rotan a medianoche</span><span class="mbar-cnt" id="dcnt">0/5</span><button class="gbtn gbtn-sm" id="brdly">↺ <span data-k="btnNew">NUEVAS</span></button></div>
+    <div class="mlist" id="dlist"></div>
+  </div>
+  <div class="tc" id="mt-weekly">
+    <div class="mbar"><span data-k="infoWkly">Misión extrema semanal</span><span class="mbar-cnt" id="wstatus">PENDIENTE</span><button class="gbtn gbtn-sm" id="brwkly">↺ <span data-k="btnNew2">NUEVA</span></button></div>
+    <div class="mlist" id="wlist"></div>
+  </div>
+  <div class="tc" id="mt-chill">
+    <div class="mbar"><span data-k="infoChl">Desafíos sin límite de tiempo</span><span class="mbar-cnt" id="ccnt">0/10</span><button class="gbtn gbtn-sm" id="brchl">↺ <span data-k="btnReset2">REINICIAR</span></button></div>
+    <div class="mlist" id="clist"></div>
+  </div>
+</div>
+
+<div class="gp">
+  <div class="gp-strip"></div>
+  <div class="danger-wrap">
+    <div class="dhead">⚠ <span data-k="titleDanger">Zona de Peligro</span></div>
+    <div class="ddesc" data-k="descDanger">Borrar toda la data guardada. Esta acción no tiene vuelta atrás.</div>
+    <button class="gbtn-primary gbtn-fw" id="bwipe" data-k="btnWipe">☠ BORRAR TODO — EMPEZAR DESDE CERO</button>
+  </div>
+</div>
+
+</div></div><script>
+/* ══ I18N ══ */
+const D={
+  en:{titleSlots:"Save Slots",noSlot:"No active slot",slotLbl:"Active: Slot #{N}",btnDark:"🌑 DARK",btnLight:"☀ LIGHT",badgeActive:"▶ ACTIVE",lblStreaks:"Streaks",lblFree:"FREE",lblFullRoster:"Full Roster",cfWipe:"WIPE ALL?",rwSound:"Special sound",rwBorder:"Special border",rwVisual:"Visual effect",titleTracker:"Scrap Tracker",lblGoal:"Scrap Goal",lblSaved:"Saved Scrap",lblAdd:"Add Scrap",btnAdd:"+ ADD",btnUndo:"⎌ UNDO",btnReset:"⚠ RESET",btnSave:"▣ SAVE",lblHist:"History",sGoal:"Goal",sSaved:"Saved",sRem:"Remaining",lblUnlocks:"Unlockables",titleStreaks:"Character Streaks",tabSurv:"Survivors",tabKill:"Animatronics",titleMissions:"Missions",tabDaily:"⚡ Daily",tabWeekly:"💀 Weekly",tabChill:"🎯 Challenges",infoDly:"5 missions per day, resets at midnight",infoWkly:"Extreme weekly mission",infoChl:"Skill challenges, no time limit",btnNew:"NEW",btnNew2:"NEW",btnReset2:"RESET",titleDanger:"Danger Zone",descDanger:"Delete all saved data. This cannot be undone.",btnWipe:"☠ WIPE ALL — START FROM SCRATCH",roleSurv:"SURVIVOR",roleKill:"KILLER",stkLbl:"STREAK",diff:"DIFFICULTY",compl:"COMPLETE",complDone:"✔ COMPLETED",tipPro:"🔥 PRO TIP",tipLbl:"💡 TIP on complete",reward:"🏆 REWARD — ",stPend:"PENDING",stDone:"✔ COMPLETED",noHist:"No entries",sEmpty:"EMPTY",sLoad:"LOAD",sSaveH:"SAVE",sDel:"✕",cfLoad:"Load this slot? Unsaved progress will be lost.",cfDel:"Delete this slot?",tAdd:"✅ +{X} Scrap added",tUndo:"⎌ Undone",tReset:"⚠ Reset",tSave:"▣ Saved to Slot {N}",tLoad:"📂 Slot {N} loaded",tDel:"🗑 Slot {N} deleted",tMis:"✔ Mission completed",tWkly:"🏆 Weekly mission completed!",tChl:"🎯 Challenge completed",tWipe:"☠ Data wiped."},
+  es:{titleSlots:"Partidas Guardadas",noSlot:"Sin slot activo",slotLbl:"Slot activo: #{N}",btnDark:"🌑 OSCURO",btnLight:"☀ CLARO",badgeActive:"▶ ACTIVO",lblStreaks:"Rachas",lblFree:"GRATIS",lblFullRoster:"Roster completo",cfWipe:"¿BORRAR TODO?",rwSound:"Sonido especial",rwBorder:"Borde especial",rwVisual:"Efecto visual",titleTracker:"Scrap Tracker",lblGoal:"Meta de Scrap",lblSaved:"Scrap Acumulado",lblAdd:"Agregar Scrap",btnAdd:"+ AGREGAR",btnUndo:"⎌ DESHACER",btnReset:"⚠ REINICIAR",btnSave:"▣ GUARDAR",lblHist:"Historial",sGoal:"Meta",sSaved:"Acumulado",sRem:"Te faltan",lblUnlocks:"Desbloqueables",titleStreaks:"Rachas por Personaje",tabSurv:"Sobrevivientes",tabKill:"Animatrónicos",titleMissions:"Misiones",tabDaily:"⚡ Diarias",tabWeekly:"💀 Semanal",tabChill:"🎯 Desafíos",infoDly:"5 misiones por día, rotan a medianoche",infoWkly:"Misión extrema semanal",infoChl:"Desafíos sin límite de tiempo",btnNew:"NUEVAS",btnNew2:"NUEVA",btnReset2:"REINICIAR",titleDanger:"Zona de Peligro",descDanger:"Borrar toda la data guardada. Esta acción no tiene vuelta atrás.",btnWipe:"☠ BORRAR TODO — EMPEZAR DESDE CERO",roleSurv:"SURVIVOR",roleKill:"KILLER",stkLbl:"RACHA",diff:"DIFICULTAD",compl:"COMPLETAR",complDone:"✔ COMPLETADA",tipPro:"🔥 TIP PRO",tipLbl:"💡 TIP al completar",reward:"🏆 RECOMPENSA — ",stPend:"PENDIENTE",stDone:"✔ COMPLETADA",noHist:"Sin entradas",sEmpty:"VACÍO",sLoad:"CARGAR",sSaveH:"GUARDAR",sDel:"✕",cfLoad:"¿Cargar este slot? El progreso no guardado se perderá.",cfDel:"¿Borrar este slot?",tAdd:"✅ +{X} Scrap agregado",tUndo:"⎌ Deshecho",tReset:"⚠ Reiniciado",tSave:"▣ Guardado en Slot {N}",tLoad:"📂 Slot {N} cargado",tDel:"🗑 Slot {N} borrado",tMis:"✔ Misión completada",tWkly:"🏆 Misión semanal completada!",tChl:"🎯 Desafío completado",tWipe:"☠ Data borrada."},
+  pt:{titleSlots:"Slots de Save",noSlot:"Nenhum slot ativo",slotLbl:"Ativo: Slot #{N}",btnDark:"🌑 ESCURO",btnLight:"☀ CLARO",badgeActive:"▶ ATIVO",lblStreaks:"Sequências",lblFree:"GRÁTIS",lblFullRoster:"Roster completo",cfWipe:"APAGAR TUDO?",rwSound:"Som especial",rwBorder:"Borda especial",rwVisual:"Efeito visual",titleTracker:"Rastreador de Scrap",lblGoal:"Meta de Scrap",lblSaved:"Scrap Acumulado",lblAdd:"Adicionar Scrap",btnAdd:"+ ADICIONAR",btnUndo:"⎌ DESFAZER",btnReset:"⚠ REINICIAR",btnSave:"▣ SALVAR",lblHist:"Histórico",sGoal:"Meta",sSaved:"Acumulado",sRem:"Restante",lblUnlocks:"Desbloqueáveis",titleStreaks:"Sequências por Personagem",tabSurv:"Sobreviventes",tabKill:"Animatrônicos",titleMissions:"Missões",tabDaily:"⚡ Diárias",tabWeekly:"💀 Semanal",tabChill:"🎯 Desafios",infoDly:"5 missões por dia, renovam à meia-noite",infoWkly:"Missão semanal extrema",infoChl:"Desafios sem limite de tempo",btnNew:"NOVAS",btnNew2:"NOVA",btnReset2:"REINICIAR",titleDanger:"Zona de Perigo",descDanger:"Apagar todos os dados salvos. Esta ação não pode ser desfeita.",btnWipe:"☠ APAGAR TUDO — COMEÇAR DO ZERO",roleSurv:"SURVIVOR",roleKill:"KILLER",stkLbl:"SEQUÊNCIA",diff:"DIFICULDADE",compl:"COMPLETAR",complDone:"✔ COMPLETADO",tipPro:"🔥 DICA PRO",tipLbl:"💡 DICA ao completar",reward:"🏆 RECOMPENSA — ",stPend:"PENDENTE",stDone:"✔ COMPLETADO",noHist:"Sem entradas",sEmpty:"VAZIO",sLoad:"CARREGAR",sSaveH:"SALVAR",sDel:"✕",cfLoad:"Carregar este slot? O progresso não salvo será perdido.",cfDel:"Deletar este slot?",tAdd:"✅ +{X} Scrap adicionado",tUndo:"⎌ Desfeito",tReset:"⚠ Reiniciado",tSave:"▣ Salvo no Slot {N}",tLoad:"📂 Slot {N} carregado",tDel:"🗑 Slot {N} deletado",tMis:"✔ Missão completada",tWkly:"🏆 Missão semanal completada!",tChl:"🎯 Desafio completado",tWipe:"☠ Dados apagados."}
+};
+let lang=localStorage.getItem("bbn_lang")||"en";
+function T(k,v){let s=(D[lang]&&D[lang][k])||D.en[k]||k;if(v)Object.entries(v).forEach(([a,b])=>s=s.replace('{'+a+'}',b));return s;}
+function applyLang(){
+  const flags={en:"🌐 EN",es:"🌐 ES",pt:"🌐 PT"};
+  document.getElementById("blang").textContent=flags[lang]||"🌐 EN";
+  document.querySelectorAll(".lang-opt").forEach(b=>b.classList.toggle("active",b.dataset.l===lang));
+  document.querySelectorAll("[data-k]").forEach(el=>{const k=el.getAttribute("data-k");const v=T(k);if(v&&v!==k)el.innerHTML=v;});
+}
+
+/* ══ STATE ══ */
+const SK="bbn_v3";
+let st={goal:13750,saved:0,history:[],streaks:{},dailyDone:{},weeklyDone:{},chillDone:{},dayOffset:0};
+function loadSt(){try{const r=localStorage.getItem(SK);if(r)st=JSON.parse(r);}catch(e){}["streaks","dailyDone","weeklyDone","chillDone"].forEach(k=>{if(!st[k])st[k]={};});if(!st.dayOffset)st.dayOffset=0;}
+function saveSt(){localStorage.setItem(SK,JSON.stringify(st));}
+
+/* ══ SLOTS ══ */
+const SKS="bbn_slots_v3",SKA="bbn_asl",NS=5;
+function getSl(){try{const r=localStorage.getItem(SKS);if(r){const p=JSON.parse(r);while(p.length<NS)p.push(null);return p.slice(0,NS);}}catch(e){}return Array(NS).fill(null);}
+function saveSl(s){localStorage.setItem(SKS,JSON.stringify(s));}
+function getAct(){const v=localStorage.getItem(SKA);return v!=null?parseInt(v):-1;}
+function setAct(i){localStorage.setItem(SKA,String(i));}
+function fmtD(iso){try{const d=new Date(iso);return d.toLocaleDateString()+" "+d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});}catch(e){return"—";}}
+
+function doSave(idx){const sl=getSl();sl[idx]={state:JSON.parse(JSON.stringify(st)),at:new Date().toISOString()};saveSl(sl);setAct(idx);renderSl();toast(T("tSave",{N:idx+1}));}
+function doLoad(idx){const sl=getSl();const s=sl[idx];if(!s||!s.state)return;if(!confirm(T("cfLoad")))return;st=JSON.parse(JSON.stringify(s.state));["streaks","dailyDone","weeklyDone","chillDone"].forEach(k=>{if(!st[k])st[k]={};});if(!st.dayOffset)st.dayOffset=0;setAct(idx);saveSt();applyUI();buildSt();buildDly();buildWkly();buildChl();renderSl();toast(T("tLoad",{N:idx+1}));}
+function doDel(idx){if(!confirm(T("cfDel")))return;const sl=getSl();sl[idx]=null;saveSl(sl);if(getAct()===idx)setAct(-1);renderSl();toast(T("tDel",{N:idx+1}));}
+
+function renderSl(){
+  const sl=getSl();const act=getAct();
+  const g=document.getElementById("slots-grid");g.innerHTML="";
+  document.getElementById("slot-lbl").textContent=act>=0?T("slotLbl",{N:act+1}):T("noSlot");
+  sl.forEach((s,i)=>{
+    const isAct=act===i;const emp=!s||!s.state;
+    const pct=!emp&&s.state.goal>0?Math.min(100,s.state.saved/s.state.goal*100):0;
+    const sn=!emp?(s.state.saved||0).toLocaleString():"0";
+    const stk=!emp?Object.values(s.state.streaks||{}).reduce((a,b)=>a+(b||0),0):0;
+    const c=document.createElement("div");
+    c.className="slot-card"+(isAct?" act":"")+(emp?" empty":"");
+    let h=isAct?`<div class="slot-badge">${T("badgeActive")}</div>`:"";
+    h+=`<div class="slot-day">SLOT ${i+1}</div>`;
+    if(!emp){
+      h+=`
+        <div class="slot-icon">◆</div>
+        <div class="slot-bignum">${sn}</div>
+        <div class="slot-bar"><div class="slot-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>
+        <div class="slot-pct">${pct.toFixed(1)}%</div>
+        <div class="slot-date">${fmtD(s.at)}<br>${T("lblStreaks")}: ${stk}</div>
+        <div class="slot-acts">
+          <button class="gbtn gbtn-sm" style="flex:1" data-a="load" data-i="${i}">${T("sLoad")}</button>
+          <button class="gbtn gbtn-sm danger" data-a="del" data-i="${i}">${T("sDel")}</button>
+        </div>`;
+    }else{
+      h+=`<div class="slot-icon" style="font-size:28px;opacity:.25">+</div><div class="slot-empty-lbl">${T("sEmpty")}</div><div class="slot-acts"><button class="gbtn gbtn-sm gbtn-fw" data-a="savehere" data-i="${i}">${T("sSaveH")}</button></div>`;
+    }
+    c.innerHTML=h;g.appendChild(c);
+  });
+  g.querySelectorAll("[data-a]").forEach(b=>{
+    b.addEventListener("click",e=>{e.stopPropagation();const i=parseInt(b.dataset.i);const a=b.dataset.a;if(a==="load")doLoad(i);else if(a==="del")doDel(i);else if(a==="savehere"){setAct(i);doSave(i);}});
+  });
+}
+
+/* ══ CHARACTERS ══ */
+const SURV=[
+  {id:"customer",name:"Customer",emoji:"🧍", img:"https://i.imgur.com/DUX6gKT.jpeg", q:{es:'"Comé pizza."',en:'"Eat pizza."',pt:'"Coma pizza."'}},
+  {id:"medic",name:"Medic",emoji:"🩺", img:"https://i.imgur.com/WgAonn3.jpeg", q:{es:'"¡Volvé a ponerte de pie!"',en:'"Get back on your feet!"',pt:'"Levante-se!"'}},
+  {id:"security",name:"Security Guard",emoji:"📷", img:"https://i.imgur.com/Cg9XHy9.jpeg", q:{es:'"¡Atrás!"',en:'"Stay back!"',pt:'"Recue!"'}},
+  {id:"fighter",name:"Fighter",emoji:"🪓", img:"https://i.imgur.com/3Qt9PWK.jpeg", q:{es:'"¿Espera, podés contraatacar?"',en:'"Wait, you can fight back?"',pt:'"Espera, você pode revidar?"'}},
+];
+const KILL=[
+  {id:"rotten",name:"Springtrap",emoji:"☠️", img:"https://i.imgur.com/fogPHLN.jpeg", q:{es:'"Siempre vuelvo."',en:'"I always come back."',pt:'"Eu sempre volto."'}},
+  {id:"mistake",name:"The Mimic",emoji:"🤖", img:"https://i.imgur.com/OzpQDnI.jpeg", q:{es:'"¿Por qué no confías en mí?"',en:'"Why don\'t you trust me?"',pt:'"Por que você não confia em mim?"'}},
+  {id:"doppelganger",name:"Ennard",emoji:"👁️", img:"https://i.imgur.com/eGv1eJL.jpeg", q:{es:'"No morirás."',en:'"You will not die."',pt:'"Você não vai morrer."'}},
+];
+
+function getStk(id){return st.streaks[id]||0;}
+function setStk(id,v){
+  st.streaks[id]=Math.max(0,v);saveSt();
+  const n=getStk(id);const el=document.getElementById("sn-"+id);if(!el)return;
+  el.textContent=n;el.className="snum"+(n>=10?" fire":n>=5?" hot":"");
+  el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump");
+  setTimeout(()=>el.classList.remove("bump"),220);
+}
+
+function makeCharRow(c,isK){
+  const fid=(isK?"k_":"")+c.id;const n=getStk(fid);
+  const sc=n>=10?" fire":n>=5?" hot":"";
+  
+  const imgUrl=c.img; 
+  
+  const thumbContent=imgUrl
+    ?`<img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;" onerror="this.style.display='none';this.nextSibling.style.display='flex'"><span style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:28px;">${c.emoji}</span>`
+    :`<span style="position:relative;z-index:2;">${c.emoji}</span>`;
+    
+  const row=document.createElement("div");row.className="char-row";
+  row.innerHTML=`
+    <div class="char-thumb" id="thumb-${fid}" style="position:relative;overflow:hidden;">
+      ${thumbContent}
+    </div>
+    <div class="char-info">
+      <div class="char-name">${c.name}</div>
+      <div class="char-quote">${typeof c.q==="object"?(c.q[lang]||c.q.en):c.q}</div>
+      <span class="char-role-tag ${isK?"kl":""}">${isK?T("roleKill"):T("roleSurv")}</span>
+    </div>
+    <div class="char-streak-col">
+      <div class="snum${sc}" id="sn-${fid}">${n}</div>
+      <div class="slbl">${T("stkLbl")}</div>
+      <div class="sbtns">
+        <button class="sbtn" id="sa-${fid}">+1</button>
+        <button class="sbtn x" id="sr-${fid}">✕</button>
+      </div>
+    </div>`;
+    
+  return row;
+}
+
+function buildSt(){
+  const sl=document.getElementById("surv-list");const kl=document.getElementById("kill-list");
+  sl.innerHTML="";kl.innerHTML="";
+  SURV.forEach(c=>{sl.appendChild(makeCharRow(c,false));document.getElementById("sa-"+c.id).onclick=()=>setStk(c.id,getStk(c.id)+1);document.getElementById("sr-"+c.id).onclick=()=>setStk(c.id,0);});
+  KILL.forEach(c=>{const fid="k_"+c.id;kl.appendChild(makeCharRow(c,true));document.getElementById("sa-"+fid).onclick=()=>setStk(fid,getStk(fid)+1);document.getElementById("sr-"+fid).onclick=()=>setStk(fid,0);});
+}
+document.querySelectorAll("[data-st]").forEach(b=>{b.addEventListener("click",()=>{document.querySelectorAll("[data-st]").forEach(x=>x.classList.remove("on"));document.querySelectorAll("#st-surv,#st-kill").forEach(x=>x.classList.remove("on"));b.classList.add("on");document.getElementById("st-"+b.dataset.st).classList.add("on");});});
+
+/* ══ TIPS & MISSIONS ══ */
+const TIPS=[
+  {es:"El Scrap máximo por ronda como Survivor ronda los 400–500. Sobrevivir más tiempo y completar generadores son claves.",en:"Max Scrap per round as Survivor is ~400–500. Surviving longer and completing generators are key."},
+  {es:"The Rotten combina Scream + Beartrap para atrapar Survivors cerca de los generadores.",en:"The Rotten combines Scream + Beartrap to trap Survivors near generators."},
+  {es:"El Fighter puede parry los ataques. Timing ajustado: activá el parry en la animación de swing.",en:"Fighter can parry attacks. Tight timing: activate parry right on the swing animation."},
+  {es:"El Medic: curar a un aliado con salud completa da overheal. Priorizá al Fighter antes del rush.",en:"Medic: healing a full-health ally gives overheal. Prioritize the Fighter before the rush."},
+  {es:"The Doppelganger genera Wire Eyes. Quitatelos INMEDIATAMENTE pero lejos de tus compañeros (AoE).",en:"Doppelganger spawns Wire Eyes. Remove IMMEDIATELY but away from teammates (AoE explosion)."},
+  {es:"El Security Guard es infravalorado. Su taser ralentiza y sus cámaras marcan al Killer para todos.",en:"Security Guard is underrated. Taser slows and cameras mark the Killer for all teammates."},
+  {es:"The Mistake (Mimic) en Stealth tiene pasos silenciosos. Revisá visualmente los generadores siempre.",en:"Mimic in Stealth has silent steps. Always visually check generators."},
+  {es:"Practicá el minijuego de generadores hasta automatizarlo. Fallar alerta al Killer.",en:"Practice the generator minigame until automatic. Failing alerts the Killer."},
+  {es:"Barricadar puertas tiene su propio minijuego. Solo barricadá rutas directas del Killer.",en:"Barricading has its own minigame. Only barricade direct Killer routes."},
+  {es:"Last Man Standing: coordiná quién distrae y quién hace el último gen si quedan dos.",en:"Last Man Standing: coordinate who distracts and who does the last gen."},
+  {es:"Customer: su habilidad de velocidad da slow al final. Usala para escapar, no para iniciar.",en:"Customer: speed ability slows at the end. Use it to escape, not to initiate."},
+  {es:"El Scrap escala con desempeño: completar gens, sobrevivir y ganar ronda dan más Scrap.",en:"Scrap scales with performance: completing gens, surviving, and winning give more Scrap."},
+  {es:"Loops contra Rotten: evitá círculos, hacé figuras de 8 en árboles para confundirlo.",en:"Loops vs Rotten: avoid circles, do figure-8s around trees to confuse him."},
+  {es:"El gen más cercano al exit hacelo ÚLTIMO — te permite escapar rápido al abrirse.",en:"Complete the gen closest to exit LAST — lets you escape quickly when it opens."},
+  {es:"Overheal del Medic da un buffer de 20-30 HP extra. Priorizá siempre al Fighter.",en:"Medic's Overheal gives 20-30 HP buffer. Always prioritize the Fighter."},
+  {es:"El Grab del Doppelganger se esquiva con sidestep. Hitbox muy estrecho.",en:"Doppelganger's Grab is dodged with sidestep. Very narrow hitbox."},
+  {es:"Loopeo: el objetivo NO es escapar, es dar tiempo a tus compañeros en los gens.",en:"Looping: the goal is NOT to escape — it's to buy time for teammates on gens."},
+  {es:"Farmear: Customer + Springtrap son tu base gratis. Unas 15 sesiones te dan al Mimic.",en:"Farming: Customer + Springtrap are your free base. About 15 sessions get you the Mimic."},
+  {es:"Cámaras del Security Guard crean un halo visible para todos los aliados en el mapa.",en:"Security Guard cameras create a visible halo for all allies on the map."},
+  {es:"Modo Stealth del Mimic es detectado por las cámaras del Security Guard.",en:"Mimic's Stealth mode is detected by Security Guard cameras."},
+  {es:"Roster completo ~ 13,750 Scrap. Tomará unas 28 sesiones promedio.",en:"Full roster ~ 13,750 Scrap. Takes about 28 average sessions."},
+  {es:"Trampas del Rotten tienen 2m de radio. Revisá el terreno antes de tocar un gen.",en:"Rotten traps have 2m radius. Check the ground before touching a gen."},
+  {es:"Customer: spamear habilidades en cooldown maximiza los usos por ronda.",en:"Customer: spamming abilities on cooldown maximizes uses per round."},
+  {es:"Survivors tienen 100 HP. El Killer necesita 3-4 hits. Tenés ventana para escapar.",en:"Survivors have 100 HP. The Killer needs 3-4 hits. You have a window to escape."},
+  {es:"Mimic en Speed: no corras en línea recta, forzalo a cambiar de trayectoria.",en:"Mimic in Speed: don't run straight, force him to constantly change trajectory."},
+];
+const DLY=[
+  {es:"Completá 3 rondas como Survivor sin ser eliminado.",en:"Complete 3 rounds as Survivor without dying.",d:7,tip:0},
+  {es:"Escapá en 2 rondas siendo el primero en llegar al exit.",en:"Escape 2 rounds being the first to reach the exit.",d:8,tip:13},
+  {es:"Completá 1 ronda como Survivor sin usar habilidades.",en:"Complete 1 round as Survivor without using abilities.",d:7,tip:8},
+  {es:"Sobreviví hasta las 6 AM en 2 rondas.",en:"Survive until 6 AM in 2 rounds.",d:8,tip:7},
+  {es:"Escapá en 3 rondas consecutivas sin morir.",en:"Escape 3 consecutive rounds without dying.",d:9,tip:0},
+  {es:"Escapá siendo el último vivo (Last Man Standing).",en:"Escape as the Last Man Standing.",d:9,tip:9},
+  {es:"Lográ 5 escapes en el día.",en:"Achieve 5 escapes today.",d:7,tip:11},
+  {es:"Jugá 10 rondas sin abandonar a mitad.",en:"Play 10 rounds without leaving mid-game.",d:6,tip:11},
+  {es:"Completá 3 generadores tú solo en una ronda.",en:"Complete 3 generators by yourself in one round.",d:8,tip:7},
+  {es:"Reparás 5 generadores hoy sin error de minijuego.",en:"Repair 5 generators today without minigame errors.",d:8,tip:7},
+  {es:"Jugá 3 rondas como Customer y escapá en todas.",en:"Play 3 rounds as Customer and escape all.",d:7,tip:10},
+  {es:"Lográ 1 parry exitoso en 3 rondas como Fighter.",en:"Land 1 successful parry in 3 rounds as Fighter.",d:8,tip:2},
+  {es:"Sanás a 3 aliados distintos en 1 ronda como Medic.",en:"Heal 3 different allies in 1 round as Medic.",d:8,tip:14},
+  {es:"Marcá al Killer 5 veces en 1 ronda con cámaras.",en:"Mark the Killer 5 times in 1 round with cameras.",d:7,tip:18},
+  {es:"Eliminá a todos antes de que completen generadores (Rotten).",en:"Eliminate everyone before generators are done (Rotten).",d:8,tip:1},
+  {es:"Ganás 1 ronda usando los 3 modos del Mimic.",en:"Win 1 round using all 3 Mimic modes.",d:9,tip:6},
+  {es:"Acumulás 1,000 Scrap en el día.",en:"Accumulate 1,000 Scrap today.",d:7,tip:11},
+  {es:"Mantené una persecución 90 seg sin morir en 2 rondas.",en:"Maintain a 90s chase without dying in 2 rounds.",d:8,tip:16},
+  {es:"Barricadás una puerta en 3 rondas distintas.",en:"Barricade a door in 3 different rounds.",d:6,tip:8},
+  {es:"Escapá sin que el Killer te golpee ni una vez.",en:"Escape without getting hit even once.",d:9,tip:12},
+];
+while(DLY.length<50){DLY.push({es:"Completá 2 rondas asegurando tu supervivencia.",en:"Complete 2 rounds securing your survival.",d:Math.floor(Math.random()*4)+5,tip:Math.floor(Math.random()*TIPS.length)});}
+const WKL=[
+  {es:"Acumulás 5,000 Scrap en una sola semana.",en:"Accumulate 5,000 Scrap in a single week.",rw:"rwSound"},
+  {es:"Lográs 50 victorias como Survivor esta semana.",en:"Achieve 50 Survivor wins this week.",rw:"rwBorder"},
+  {es:"Ganás 25 rondas como Killer esta semana.",en:"Win 25 rounds as Killer this week.",rw:"rwVisual"}
+];
+const CHL=[
+  {es:"Reparás 1 generador en menos de 60s sin errores.",en:"Repair 1 gen in <60s without errors.",d:7},
+  {es:"Jugás 1 ronda solo para observar al Killer.",en:"Play 1 round just to observe the Killer.",d:6},
+  {es:"Escondete por 60+ segundos sin ser visto.",en:"Hide for 60+ seconds without being seen.",d:7},
+  {es:"Lográ una victoria sin usar sprint.",en:"Achieve a win without using sprint at any point.",d:9},
+  {es:"Completá 2 generadores consecutivos sin pausar.",en:"Complete 2 generators back to back without pausing.",d:7},
+  {es:"Escapá sin que el Killer te golpee ni una vez.",en:"Escape without getting hit once.",d:9},
+  {es:"Jugá una ronda sin barricadar ninguna puerta.",en:"Play a round without barricading any door.",d:6},
+  {es:"Completá 1 gen siendo el último vivo.",en:"Complete 1 generator as the last survivor.",d:8},
+  {es:"Observá al Killer 30s sin ser detectado.",en:"Observe the Killer for 30s without detection.",d:7},
+  {es:"Ganás como Killer sin usar ninguna habilidad activa.",en:"Win as Killer without using any active ability.",d:8}
+];
+
+/* ══ RNG ══ */
+function rng(s){let x=s%2147483647;if(x<=0)x+=2147483646;return()=>{x=x*16807%2147483647;return(x-1)/2147483646;};}
+function shuf(a,r){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function tseed(){const d=new Date();return(d.getFullYear()*10000+((d.getMonth()+1)*100)+d.getDate())+(st.dayOffset||0);}
+function wseed(){const d=new Date();const j=new Date(d.getFullYear(),0,1);const w=Math.ceil(((d-j)/86400000+j.getDay()+1)/7);return d.getFullYear()*1000+w+Math.floor((st.dayOffset||0)/7);}
+function dkey(){return"d"+tseed();}function wkey(){return"w"+wseed();}
+
+/* ══ UI ══ */
+function applyUI(){
+  const g=st.goal,s=st.saved;
+  document.getElementById("goal").value=g;document.getElementById("saved").value=s;
+  document.getElementById("dgoal").textContent=g.toLocaleString();
+  document.getElementById("dsaved").textContent=s.toLocaleString();
+  document.getElementById("drem").textContent=Math.max(0,g-s).toLocaleString();
+  const pct=g>0?Math.min(100,s/g*100):0;
+  document.getElementById("pfill").style.width=pct.toFixed(2)+"%";
+  document.getElementById("ppct").textContent=pct.toFixed(2)+"%";
+  document.getElementById("hscrap").textContent=s.toLocaleString();
+  const h=document.getElementById("hist");h.innerHTML="";
+  if(!st.history||!st.history.length){h.innerHTML=`<div style="font-family:var(--mono);font-size:11px;color:var(--c-txt3);padding:4px 0">${T("noHist")}</div>`;return;}
+  st.history.slice(0,200).forEach(e=>{const d=new Date(e.at);const r=document.createElement("div");r.className="hist-r";r.innerHTML=`<span class="ha">+${e.amount.toLocaleString()} ◆</span><span class="ht">${d.toLocaleString()}</span>`;h.appendChild(r);});
+}
+
+function addScrap(n){if(!n||n<=0)return;st.saved+=n;if(!st.history)st.history=[];st.history.unshift({type:"add",amount:n,at:new Date().toISOString()});applyUI();saveSt();toast(T("tAdd",{X:n.toLocaleString()}));}
+function undo(){if(!st.history||!st.history.length)return;const l=st.history.shift();if(l&&l.type==="add")st.saved=Math.max(0,st.saved-l.amount);applyUI();saveSt();toast(T("tUndo"));}
+function reset(){if(!confirm("¿Seguro? / Sure?"))return;st.saved=0;st.history=[];applyUI();saveSt();toast(T("tReset"));}
+
+document.getElementById("badd").onclick=()=>{const v=parseInt(document.getElementById("mamt").value)||0;if(v<=0)return;addScrap(v);document.getElementById("mamt").value="";};
+document.getElementById("mamt").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("badd").click();});
+document.getElementById("bundo").onclick=undo;
+document.getElementById("breset").onclick=reset;
+document.getElementById("bsave").onclick=()=>{const a=getAct();if(a<0||a>=NS){const sl=getSl();const ei=sl.findIndex(s=>!s);const idx=ei>=0?ei:0;setAct(idx);doSave(idx);}else{doSave(a);}};
+document.getElementById("goal").addEventListener("input",()=>{st.goal=Number(document.getElementById("goal").value)||0;applyUI();saveSt();});
+document.getElementById("saved").addEventListener("input",()=>{st.saved=Number(document.getElementById("saved").value)||0;applyUI();saveSt();});
+
+/* ══ MISSIONS ══ */
+function mkMrow(m,idx,pool,isDone,id,onDone,isWkly){
+  const tip=TIPS[m.tip!=null?m.tip:0]||TIPS[0];const tipTxt=tip[lang]||tip.es;
+  const txt=m[lang]||m.es;
+  const wrap=document.createElement("div");wrap.style.cssText="display:flex;flex-direction:column;";
+  const row=document.createElement("div");row.className="mrow"+(isDone?" dn":"");
+  const idStr=isWkly?"W-01":(pool==="chl"?`C-${String(idx+1).padStart(2,"0")}`:`D-${String(idx+1).padStart(2,"0")}`);
+  const rwHtml=isWkly?`<span class="wlbl">${T("reward")}${T(m.rw)}</span>`:(m.tip!=null?`<span class="rlbl">${T("tipLbl")}</span>`:"");
+  row.innerHTML=`
+    <div class="mid">${idStr}</div>
+    <div class="mbody">
+      <div class="mtitle">${txt}</div>
+      <div class="mmeta">
+        <span class="dpill d${m.d||7}">${T("diff")} ${m.d||7}/10</span>
+        ${rwHtml}
+      </div>
+    </div>
+    <div class="mcol">
+      <button class="btn-complete${isDone?" dn":""}" id="cb-${id}" ${isDone?"disabled":""}>${isDone?T("complDone"):T("compl")}</button>
+    </div>`;
+  const tb=document.createElement("div");
+  tb.className="tipbox"+(isDone&&(m.tip!=null||isWkly)?" on":"");
+  tb.innerHTML=`<div class="tiphead">${T("tipPro")}</div>${isWkly?`🏆 ${T("reward")}${T(m.rw)}`:tipTxt}`;
+  wrap.appendChild(row);wrap.appendChild(tb);
+  if(!isDone&&onDone){setTimeout(()=>{const btn=document.getElementById("cb-"+id);if(btn)btn.onclick=()=>{onDone();tb.classList.add("on");};},0);}
+  return wrap;
+}
+
+function buildDly(){
+  const r=rng(tseed()*7+13);const ms=shuf(DLY,r).slice(0,5);
+  const list=document.getElementById("dlist");const done=st.dailyDone[dkey()]||[];list.innerHTML="";
+  ms.forEach((m,i)=>{
+    const id="d_"+i;const isDone=done.includes(id);
+    list.appendChild(mkMrow(m,i,"dly",isDone,id,()=>{
+      if(!st.dailyDone[dkey()])st.dailyDone[dkey()]=[];
+      st.dailyDone[dkey()].push(id);saveSt();buildDly();updCnts();toast(T("tMis"));
+    },false));
+  });updCnts();
+}
+function buildWkly(){
+  const r=rng(wseed()*31+7);const m=shuf(WKL,r)[0];const wk=wkey();const isDone=!!st.weeklyDone[wk];
+  const list=document.getElementById("wlist");list.innerHTML="";
+  list.appendChild(mkMrow(m,0,"wkly",isDone,"w_0",()=>{
+    st.weeklyDone[wk]=true;saveSt();buildWkly();updCnts();toast(T("tWkly"));
+  },true));
+  document.getElementById("wstatus").textContent=isDone?T("stDone"):T("stPend");updCnts();
+}
+function buildChl(){
+  const list=document.getElementById("clist");list.innerHTML="";
+  CHL.forEach((m,i)=>{
+    const id="c_"+i;const isDone=!!st.chillDone[id];
+    list.appendChild(mkMrow(m,i,"chl",isDone,id,()=>{
+      st.chillDone[id]=true;saveSt();buildChl();updCnts();toast(T("tChl"));
+    },false));
+  });updCnts();
+}
+function updCnts(){
+  const done=st.dailyDone[dkey()]||[];
+  document.getElementById("dcnt").textContent=`${done.length}/5`;
+  document.getElementById("wstatus").textContent=st.weeklyDone[wkey()]?T("stDone"):T("stPend");
+  document.getElementById("ccnt").textContent=`${Object.values(st.chillDone).filter(Boolean).length}/10`;
+}
+
+/* Mission tabs */
+document.querySelectorAll("[data-mt]").forEach(b=>{b.addEventListener("click",()=>{document.querySelectorAll("[data-mt]").forEach(x=>x.classList.remove("on"));["daily","weekly","chill"].forEach(t=>{const p=document.getElementById("mt-"+t);if(p)p.classList.remove("on");});b.classList.add("on");const p=document.getElementById("mt-"+b.dataset.mt);if(p)p.classList.add("on");});});
+
+document.getElementById("brdly").onclick=()=>{st.dayOffset=(st.dayOffset||0)+1;delete st.dailyDone[dkey()];saveSt();updOffPill();buildDly();};
+document.getElementById("brwkly").onclick=()=>{delete st.weeklyDone[wkey()];st.dayOffset=(st.dayOffset||0)+7;saveSt();updOffPill();buildWkly();};
+document.getElementById("brchl").onclick=()=>{if(!confirm("Reset?"))return;st.chillDone={};saveSt();buildChl();};
+document.getElementById("bwipe").onclick=()=>{if(!confirm(T("cfWipe")))return;localStorage.removeItem(SK);st={goal:13750,saved:0,history:[],streaks:{},dailyDone:{},weeklyDone:{},chillDone:{},dayOffset:0};saveSt();applyUI();buildSt();buildDly();buildWkly();buildChl();renderSl();toast(T("tWipe"));};
+
+/* ══ LANG & MODE ══ */
+function setLang(l){lang=l;localStorage.setItem("bbn_lang",l);applyLang();applyUI();buildSt();buildDly();buildWkly();buildChl();renderSl();}
+/* Lang dropdown */
+document.getElementById("blang").onclick=(e)=>{e.stopPropagation();document.getElementById("langDrop").classList.toggle("open");};
+document.querySelectorAll(".lang-opt").forEach(b=>{b.addEventListener("click",()=>{setLang(b.dataset.l);document.getElementById("langDrop").classList.remove("open");});});
+document.addEventListener("click",()=>document.getElementById("langDrop").classList.remove("open"));
+
+function setMode(m){
+  document.body.classList.toggle("lm",m==="light");
+  document.getElementById("bdark").classList.toggle("on",m==="dark");
+  document.getElementById("blight").classList.toggle("on",m==="light");
+  localStorage.setItem("bbn_mode",m);
+}
+document.getElementById("bdark").onclick=()=>setMode("dark");
+document.getElementById("blight").onclick=()=>setMode("light");
+
+/* ══ TIME OFFSET ══ */
+function updOffPill(){const p=document.getElementById("offpill");if(!(st.dayOffset||0)){p.style.display="none";return;}p.style.display="block";p.textContent=`OFFSET: ${st.dayOffset>0?"+":""}${st.dayOffset}d`;}
+document.getElementById("bprev").onclick=()=>{st.dayOffset=(st.dayOffset||0)-1;saveSt();updOffPill();buildDly();buildWkly();};
+document.getElementById("bnext").onclick=()=>{st.dayOffset=(st.dayOffset||0)+1;saveSt();updOffPill();buildDly();buildWkly();};
+
+/* ══ TOAST ══ */
+let ttm=null;
+function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("on");if(ttm)clearTimeout(ttm);ttm=setTimeout(()=>el.classList.remove("on"),3000);}
+
+/* ══ INIT ══ */
+loadSt();
+applyLang();
+setMode(localStorage.getItem("bbn_mode")||"dark");
+updOffPill();
+applyUI();
+buildSt();
+buildDly();
+buildWkly();
+buildChl();
+renderSl();
+</script>
+</body>
+</html>
